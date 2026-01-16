@@ -1,1 +1,3 @@
+User-agent: *
+Allow: /
 Sitemap: https://alivu.github.io/sitemap.xml
