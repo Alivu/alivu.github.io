@@ -886,56 +886,63 @@ async function checkBotStatus() {
             chatStatus.classList.add(status);
         }
 
-        async function sendMessage() {
-            const userMessage = messageInput.value.trim();
+async function sendMessage() {
+    const userMessage = messageInput.value.trim();
+    
+    console.log('1. Message:', userMessage);
+    console.log('2. userContacts:', userContacts);
+    
+    if (!userMessage) {
+        messageInput.focus();
+        return;
+    }
+    
+    // ПРОВЕРКА: Если userContacts.phone пуст, но в поле ввода есть телефон
+    if (!userContacts.phone && userPhoneInput.value.trim()) {
+        userContacts.phone = userPhoneInput.value.trim();
+        console.log('3. Автоматически взяли телефон:', userContacts.phone);
+    }
+    
+    if (!userContacts.phone) {
+        console.log('4. Нет телефона!');
+        addMessage("⚠️ Пожалуйста, сначала сохраните ваши контакты в форме выше.", 'bot');
+        userPhoneInput.focus();
+        return;
+    }
+    
+    console.log('5. Добавляем сообщение в чат...');
+    addMessage(userMessage, 'user');
+    updateChatStatus('checking', 'Отправка...');
+    
+    try {
+        console.log('6. Вызываем sendToTelegram...');
+        const result = await sendToTelegram(userMessage);
+        console.log('7. Результат:', result);
+        
+        if (result.success) {
+            updateChatStatus('online', 'Отправлено ✓');
+            simulateBotResponse(userMessage);
             
-            if (!userMessage) {
-                messageInput.focus();
-                return;
-            }
+            setTimeout(() => {
+                updateChatStatus('online', 'Онлайн');
+            }, 3000);
             
-            // ПРОВЕРКА: Если userContacts.phone пуст, но в поле ввода есть телефон
-            if (!userContacts.phone && userPhoneInput.value.trim()) {
-                userContacts.phone = userPhoneInput.value.trim();
-                console.log('Автоматически взяли телефон из поля ввода:', userContacts.phone);
-            }
-            
-            if (!userContacts.phone) {
-                addMessage("⚠️ Пожалуйста, сначала сохраните ваши контакты в форме выше.", 'bot');
-                userPhoneInput.focus();
-                return;
-            }
-            
-            addMessage(userMessage, 'user');
-            updateChatStatus('checking', 'Отправка...');
-            
-            try {
-                const result = await sendToTelegram(userMessage);
-                
-                if (result.success) {
-                    updateChatStatus('online', 'Отправлено ✓');
-                    simulateBotResponse(userMessage);
-                    
-                    setTimeout(() => {
-                        updateChatStatus('online', 'Онлайн');
-                    }, 3000);
-                    
-                } else {
-                    throw new Error(result.error || 'Неизвестная ошибка');
-                }
-                
-            } catch (error) {
-                console.error('Ошибка отправки:', error);
-                
-                addMessage(`❌ ${error.message}. Позвоните нам: +7 (963) 598-48-46`, 'bot');
-                updateChatStatus('offline', 'Ошибка');
-                simulateBotResponse(userMessage);
-                
-                setTimeout(() => {
-                    updateChatStatus('online', 'Онлайн');
-                }, 5000);
-            }
+        } else {
+            throw new Error(result.error || 'Неизвестная ошибка');
         }
+        
+    } catch (error) {
+        console.error('8. Ошибка отправки:', error);
+        
+        addMessage(`❌ ${error.message}. Позвоните нам: +7 (963) 598-48-46`, 'bot');
+        updateChatStatus('offline', 'Ошибка');
+        simulateBotResponse(userMessage);
+        
+        setTimeout(() => {
+            updateChatStatus('online', 'Онлайн');
+        }, 5000);
+    }
+}
 
         // ==================== ФУНКЦИИ МЕНЮ ====================
         menuToggle.addEventListener('click', (e) => {
